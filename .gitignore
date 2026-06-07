@@ -1,0 +1,40 @@
+# Credentials
+api.txt
+.env
+.env.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Temporary
+*.log
+*.tmp
+*.temp
+uploads/
+sessions/
+*.cache
+.pytest_cache/
+
+# Test/Development
+test_*.pdf
+sample_*.pdf
+debug_*.json
+experiments/*

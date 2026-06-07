@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Informazioni Aggiuntive{% endblock %}
+{% block header %}Alcune domande prima di continuare{% endblock %}
+
+{% block extra_css %}
+<style>
+.intro {
+    color: #555;
+    margin-bottom: 28px;
+    line-height: 1.6;
+}
+.question-card {
+    background: #f8f9ff;
+    border: 1px solid #e0e4ff;
+    border-radius: 10px;
+    padding: 18px 20px;
+    margin-bottom: 16px;
+}
+.question-card label {
+    font-weight: 600;
+    color: #333;
+    display: block;
+    margin-bottom: 8px;
+}
+.question-card input[type="text"] {
+    width: 100%;
+    padding: 10px 14px;
+    border: 2px solid #d0d4f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+.question-card input[type="text"]:focus {
+    outline: none;
+    border-color: #667eea;
+}
+.actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<p class="intro">
+    L'agente ha analizzato il modulo e ha trovato alcune informazioni che non erano disponibili
+    nei registri della PA né nel prompt iniziale. Compila i campi sotto per completare il documento.
+</p>
+
+<form action="{{ url_for('submit_missing') }}" method="post">
+    {% for q in questions %}
+    <div class="question-card">
+        <label for="field_{{ q.field_id }}">{{ q.question }}</label>
+        <input type="text" id="field_{{ q.field_id }}" name="field_{{ q.field_id }}"
+               placeholder="La tua risposta…" autocomplete="off">
+    </div>
+    {% endfor %}
+
+    <div class="actions">
+        <button type="submit" class="btn btn-primary">Continua &rarr;</button>
+    </div>
+</form>
+{% endblock %}

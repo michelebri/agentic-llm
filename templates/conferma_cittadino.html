@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Conferma Identità Richiedente{% endblock %}
+{% block header %}Conferma Identità del Richiedente{% endblock %}
+
+{% block extra_css %}
+<style>
+.intro {
+    color: #555;
+    margin-bottom: 24px;
+    line-height: 1.6;
+}
+.reasoning-box {
+    background: #eef3ff;
+    border-left: 4px solid #667eea;
+    padding: 12px 16px;
+    margin-bottom: 24px;
+    border-radius: 6px;
+    color: #333;
+    font-size: .92rem;
+}
+.reasoning-box strong { color: #4a5fd0; }
+
+.citizen-card {
+    background: #fff;
+    border: 2px solid #d0d4f0;
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin-bottom: 14px;
+    transition: all .15s;
+}
+.citizen-card:hover { border-color: #667eea; background: #f8f9ff; }
+.citizen-card.selected { border-color: #4caf50; background: #f1f8e9; }
+
+.citizen-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px;
+}
+.citizen-name { font-size: 1.15rem; font-weight: 700; color: #333; }
+.citizen-id { color: #888; font-size: .85rem; font-family: monospace; }
+
+.citizen-fields {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px 18px;
+    font-size: .9rem;
+    color: #555;
+}
+.citizen-fields .label { color: #888; font-weight: 600; }
+.citizen-fields .source-badge {
+    display: inline-block;
+    font-size: .7rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 4px;
+    color: #fff;
+}
+.src-anagrafe { background: #4a5fd0; }
+.src-stato-civile { background: #ad4ad0; }
+.src-agenzia-entrate { background: #d08a4a; }
+
+.no-match-box {
+    background: #fff8e1;
+    border: 2px solid #ffd54f;
+    border-radius: 12px;
+    padding: 20px 24px;
+    text-align: center;
+    color: #6d4c00;
+}
+
+.actions {
+    display: flex; gap: 12px; justify-content: space-between; align-items: center;
+    margin-top: 24px;
+}
+.btn-none {
+    background: #f0f0f0; color: #555;
+    border: 2px solid #ccc; padding: 10px 18px;
+    border-radius: 8px; cursor: pointer; font-size: .95rem;
+}
+.btn-none:hover { background: #e0e0e0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<p class="intro">
+    L'agente di lookup ha cercato il richiedente nei registri ufficiali della
+    Pubblica Amministrazione. Conferma l'identità corretta prima di procedere.
+</p>
+
+<div class="reasoning-box">
+    <strong>🤖 Ragionamento dell'agente:</strong><br>
+    {{ reasoning }}
+</div>
+
+{% if candidates|length == 0 %}
+    <div class="no-match-box">
+        <h3 style="margin-bottom:8px;">Nessun cittadino trovato</h3>
+        <p>Non risulta alcun cittadino con questo nome nei registri ufficiali.
+        Procederemo chiedendoti manualmente tutti i dati necessari.</p>
+        <form action="{{ url_for('conferma_cittadino') }}" method="post" style="margin-top:16px;">
+            <input type="hidden" name="scelta" value="nessuno">
+            <button type="submit" class="btn btn-primary">Procedi con inserimento manuale →</button>
+        </form>
+    </div>
+{% else %}
+    <form action="{{ url_for('conferma_cittadino') }}" method="post">
+        <p style="font-weight:600;color:#444;margin-bottom:12px;">
+            {% if candidates|length == 1 %}
+                Trovato 1 cittadino corrispondente. Confermi che è quello giusto?
+            {% else %}
+                Trovati {{ candidates|length }} cittadini con questo nome. Seleziona quello corretto.
+            {% endif %}
+        </p>
+
+        {% for c in candidates %}
+        {% set a = c.anagrafe %}
+        {% set sc = c.stato_civile %}
+        {% set ae = c.agenzia_entrate %}
+        <label class="citizen-card" style="cursor:pointer;display:block;">
+            <input type="radio" name="citizen_id" value="{{ a.id }}" required style="margin-right:8px;"
+                   {% if loop.first and candidates|length == 1 %}checked{% endif %}>
+
+            <span class="citizen-header">
+                <span class="citizen-name">{{ a.nome }} {{ a.cognome }}</span>
+                <span class="citizen-id">{{ a.id }}</span>
+            </span>
+
+            <div class="citizen-fields">
+                <div><span class="label">Data nascita:</span> {{ a.data_nascita }}
+                    <span class="source-badge src-anagrafe">Anagrafe</span></div>
+                <div><span class="label">Luogo nascita:</span> {{ a.luogo_nascita }} ({{ a.provincia_nascita }})
+                    <span class="source-badge src-anagrafe">Anagrafe</span></div>
+                <div><span class="label">Residenza:</span> {{ a.indirizzo }}, {{ a.comune_residenza }} ({{ a.cap }})
+                    <span class="source-badge src-anagrafe">Anagrafe</span></div>
+                {% if ae %}
+                <div><span class="label">Codice Fiscale:</span> {{ ae.codice_fiscale }}
+                    <span class="source-badge src-agenzia-entrate">Ag. Entrate</span></div>
+                {% endif %}
+                {% if sc %}
+                <div><span class="label">Stato civile:</span> {{ sc.stato_civile }}
+                    <span class="source-badge src-stato-civile">Stato Civile</span></div>
+                {% if sc.coniuge %}
+                <div><span class="label">Coniuge:</span> {{ sc.coniuge.nome }} {{ sc.coniuge.cognome }}
+                    <span class="source-badge src-stato-civile">Stato Civile</span></div>
+                {% endif %}
+                {% else %}
+                <div style="color:#a86a00;"><span class="label">Stato civile:</span> dato non disponibile</div>
+                {% endif %}
+            </div>
+        </label>
+        {% endfor %}
+
+        <div class="actions">
+            <button type="button" class="btn-none" onclick="document.getElementById('none-form').submit();">
+                Nessuno di questi è il richiedente
+            </button>
+            <button type="submit" class="btn btn-primary">Conferma e Continua →</button>
+        </div>
+    </form>
+
+    <form id="none-form" action="{{ url_for('conferma_cittadino') }}" method="post" style="display:none;">
+        <input type="hidden" name="scelta" value="nessuno">
+    </form>
+{% endif %}
+{% endblock %}

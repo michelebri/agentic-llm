@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}Analisi documento{% endblock %}
+{% block header %}Ho letto il documento — confermiamo cosa serve{% endblock %}
+
+{% block extra_css %}
+<style>
+.intent-card {
+    background: #eef3ff; border-left: 4px solid #667eea;
+    padding: 16px 20px; border-radius: 8px; margin-bottom: 22px;
+}
+.intent-card h3 { color: #333; margin-bottom: 6px; }
+.intent-card .subject { color: #555; font-size: 0.95rem; font-style: italic; margin-bottom: 10px; }
+.intent-card .objective { color: #333; font-size: 0.95rem; line-height: 1.5; }
+
+.section-title { color: #444; margin: 22px 0 12px; font-weight: 700; font-size: 1.02rem; }
+
+.pa-data-list {
+    display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;
+}
+.pa-chip {
+    background: #e3f2fd; color: #1565c0; padding: 6px 12px;
+    border-radius: 14px; font-size: 0.85rem; font-weight: 500;
+    border: 1px solid #bbdefb;
+}
+.pa-note {
+    color: #666; font-size: 0.85rem; margin-bottom: 18px; font-style: italic;
+}
+
+.q-field { margin-bottom: 16px; }
+.q-field label {
+    display: block; font-weight: 600; color: #333;
+    margin-bottom: 6px; font-size: 0.95rem;
+}
+.q-field .req { color: #c62828; margin-left: 4px; }
+.q-field input[type=text],
+.q-field input[type=date],
+.q-field input[type=number],
+.q-field textarea,
+.q-field select {
+    width: 100%; padding: 9px 12px; border: 1px solid #ccc;
+    border-radius: 6px; font-size: 0.95rem; box-sizing: border-box;
+    font-family: inherit;
+}
+.q-field textarea { min-height: 70px; resize: vertical; }
+
+.no-questions {
+    background: #e8f5e9; color: #2e7d32; padding: 12px 16px;
+    border-radius: 8px; border-left: 4px solid #4caf50;
+    margin-bottom: 18px;
+}
+
+.actions { display: flex; justify-content: space-between; margin-top: 24px; }
+.btn-secondary { background: #f0f0f0; color: #333; border: 1px solid #ccc; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="intent-card">
+    <h3>📄 {{ intent.document_type }}{% if intent.subject %} — {{ intent.subject }}{% endif %}</h3>
+    {% if intent.objective %}
+    <div class="objective">{{ intent.objective }}</div>
+    {% endif %}
+</div>
+
+{% if intent.data_from_pa %}
+<div>
+    <div class="section-title">🏛️ Dati che recupererò automaticamente dai registri PA</div>
+    <div class="pa-data-list">
+        {% for f in intent.data_from_pa %}
+        <span class="pa-chip">{{ f }}</span>
+        {% endfor %}
+    </div>
+    <div class="pa-note">Anagrafe, Stato Civile, Agenzia delle Entrate</div>
+</div>
+{% endif %}
+
+<form action="{{ url_for('intent_review_post') }}" method="post">
+    <div class="section-title">✍️ Informazioni che devi fornire tu</div>
+
+    {% if intent.user_questions %}
+        {% for q in intent.user_questions %}
+        <div class="q-field">
+            <label for="intent_{{ q.field_id }}">
+                {{ q.question }}{% if q.required %}<span class="req">*</span>{% endif %}
+            </label>
+
+            {% if q.type == "textarea" %}
+            <textarea name="intent_{{ q.field_id }}" id="intent_{{ q.field_id }}"
+                {% if q.required %}required{% endif %}></textarea>
+
+            {% elif q.type == "date" %}
+            <input type="date" name="intent_{{ q.field_id }}" id="intent_{{ q.field_id }}"
+                {% if q.required %}required{% endif %}>
+
+            {% elif q.type == "number" %}
+            <input type="number" name="intent_{{ q.field_id }}" id="intent_{{ q.field_id }}"
+                {% if q.required %}required{% endif %}>
+
+            {% elif q.type == "select" %}
+            <select name="intent_{{ q.field_id }}" id="intent_{{ q.field_id }}"
+                {% if q.required %}required{% endif %}>
+                <option value="">— seleziona —</option>
+                {% for opt in q.options or [] %}
+                <option value="{{ opt }}">{{ opt }}</option>
+                {% endfor %}
+            </select>
+
+            {% else %}
+            <input type="text" name="intent_{{ q.field_id }}" id="intent_{{ q.field_id }}"
+                {% if q.required %}required{% endif %}>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="no-questions">
+            Nessuna informazione aggiuntiva necessaria — tutti i dati provengono dai registri PA.
+        </div>
+    {% endif %}
+
+    <div class="actions">
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">← Annulla</a>
+        <button type="submit" class="btn btn-primary">Procedi →</button>
+    </div>
+</form>
+{% endblock %}

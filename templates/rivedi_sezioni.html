@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+
+{% block title %}Rivedi Classificazione Sezioni{% endblock %}
+{% block header %}Rivedi le decisioni dell'agente{% endblock %}
+
+{% block extra_css %}
+<style>
+.intro { color:#555; margin-bottom:20px; line-height:1.6; }
+.intro-box {
+    background:#eef3ff; border-left:4px solid #667eea;
+    padding:14px 18px; margin-bottom:24px; border-radius:6px; color:#333;
+}
+.section-card {
+    background:#fff; border:2px solid #ffcc80; border-radius:10px;
+    padding:16px 20px; margin-bottom:14px;
+}
+.section-card.high-conf { border-color:#bbdefb; }
+.section-header {
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:10px;
+}
+.section-text {
+    background:#fafbff; padding:8px 12px; border-radius:6px;
+    font-family:monospace; font-size:.88rem; color:#444;
+    margin-bottom:10px; max-height:80px; overflow:auto;
+}
+.cat-badge {
+    display:inline-block; padding:3px 10px; border-radius:6px;
+    color:#fff; font-size:.78rem; font-weight:600;
+}
+.cat-BOILERPLATE { background:#777; }
+.cat-ANAGRAFICA { background:#4a5fd0; }
+.cat-USER_CONTENT { background:#43a047; }
+.cat-ALTERNATIVE { background:#ff9800; }
+.cat-LEAVE_BLANK { background:#e53935; }
+.confidence {
+    font-size:.85rem; color:#888; font-style:italic;
+}
+.reasoning {
+    color:#666; font-size:.88rem; margin-bottom:10px; font-style:italic;
+}
+.override {
+    display:flex; gap:10px; align-items:center; flex-wrap:wrap;
+}
+.override label {
+    font-size:.88rem; color:#555;
+}
+.override select {
+    padding:6px 10px; border:1px solid #ccc; border-radius:6px;
+}
+.actions { display:flex; justify-content:flex-end; margin-top:24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="intro-box">
+    <strong>🤖 Section Classifier Agent</strong><br>
+    L'agente ha classificato ogni sezione del modulo. Per
+    {{ low_conf|length }}
+    {{ 'sezione' if low_conf|length == 1 else 'sezioni' }}
+    la confidenza è bassa: rivedi e correggi se necessario.
+</div>
+
+<form action="{{ url_for('rivedi_sezioni') }}" method="post">
+    {% for c in low_conf %}
+    {% set item = items[c.index] %}
+    <div class="section-card">
+        <div class="section-header">
+            <span class="cat-badge cat-{{ c.category }}">{{ c.category }}</span>
+            <span class="confidence">Confidence: {{ '%.0f'|format(c.confidence * 100) }}%</span>
+        </div>
+
+        <div class="section-text">{{ (item.content or item.text or '')[:200] }}</div>
+
+        <div class="reasoning">💭 {{ c.reasoning }}</div>
+
+        <div class="override">
+            <label for="cat_{{ c.index }}">Categoria:</label>
+            <select name="cat_{{ c.index }}" id="cat_{{ c.index }}">
+                <option value="BOILERPLATE" {% if c.category == 'BOILERPLATE' %}selected{% endif %}>BOILERPLATE (non toccare)</option>
+                <option value="ANAGRAFICA" {% if c.category == 'ANAGRAFICA' %}selected{% endif %}>ANAGRAFICA (dati richiedente)</option>
+                <option value="USER_CONTENT" {% if c.category == 'USER_CONTENT' %}selected{% endif %}>USER_CONTENT (contenuto utente)</option>
+                <option value="ALTERNATIVE" {% if c.category == 'ALTERNATIVE' %}selected{% endif %}>ALTERNATIVE (clausola opzionale)</option>
+                <option value="LEAVE_BLANK" {% if c.category == 'LEAVE_BLANK' %}selected{% endif %}>LEAVE_BLANK (firma/data manuale)</option>
+            </select>
+
+            <label for="act_{{ c.index }}">Azione:</label>
+            <select name="act_{{ c.index }}" id="act_{{ c.index }}">
+                <option value="fill" {% if c.action == 'fill' %}selected{% endif %}>Riempi</option>
+                <option value="skip" {% if c.action == 'skip' %}selected{% endif %}>Salta (vuoto)</option>
+                <option value="keep_as_is" {% if c.action == 'keep_as_is' %}selected{% endif %}>Lascia originale</option>
+            </select>
+        </div>
+
+        <input type="hidden" name="indices" value="{{ c.index }}">
+    </div>
+    {% endfor %}
+
+    <div class="actions">
+        <button type="submit" class="btn btn-primary">Conferma e genera documento →</button>
+    </div>
+</form>
+{% endblock %}

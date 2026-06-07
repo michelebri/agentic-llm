@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}Analyzing Template{% endblock %}
+{% block header %}Analyzing your document…{% endblock %}
+
+{% block extra_css %}
+<style>
+.spinner {
+    width: 56px; height: 56px;
+    border: 6px solid #e0e0e0;
+    border-top-color: #667eea;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+    margin: 32px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.status-text { text-align: center; color: #666; margin-bottom: 8px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="status-text">The agent is reading the template and checking what information is needed.</div>
+<div class="spinner"></div>
+<div class="status-text" id="msg">Starting analysis…</div>
+
+<form id="analyze-form" action="{{ url_for('analyze') }}" method="post" style="display:none"></form>
+
+<script>
+document.getElementById('msg').textContent = 'Calling analysis agent…';
+document.getElementById('analyze-form').submit();
+</script>
+{% endblock %}

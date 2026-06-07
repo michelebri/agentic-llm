@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}Carica Modulo - Generatore Documenti PA{% endblock %}
+
+{% block header %}Generatore di Documenti per la Pubblica Amministrazione{% endblock %}
+
+{% block content %}
+<form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+
+    <fieldset style="border:2px solid #e0e4ff;border-radius:10px;padding:18px 22px;margin-bottom:24px;background:#f8f9ff;">
+        <legend style="font-weight:700;color:#444;padding:0 8px;">Dati del Richiedente</legend>
+        <p style="color:#666;font-size:.9rem;margin-bottom:14px;">
+            Inserisci nome e cognome del cittadino richiedente. L'agente cercherà i suoi dati
+            nei registri ufficiali (Anagrafe, Stato Civile, Agenzia delle Entrate).
+        </p>
+
+        <div style="display:flex;gap:14px;">
+            <div class="form-group" style="flex:1;">
+                <label for="nome">Nome</label>
+                <input type="text" id="nome" name="nome" placeholder="Mario" required>
+            </div>
+            <div class="form-group" style="flex:1;">
+                <label for="cognome">Cognome</label>
+                <input type="text" id="cognome" name="cognome" placeholder="Rossi" required>
+            </div>
+        </div>
+    </fieldset>
+
+    <fieldset style="border:2px solid #e0e4ff;border-radius:10px;padding:18px 22px;margin-bottom:24px;">
+        <legend style="font-weight:700;color:#444;padding:0 8px;">Modulo da Compilare</legend>
+
+        <div class="form-group">
+            <label for="file">Seleziona il modulo PDF</label>
+            <input type="file" id="file" name="file" accept=".pdf" required>
+            <p style="margin-top:8px;color:#666;font-size:.9rem;">
+                Carica il modulo PDF della Pubblica Amministrazione che vuoi compilare
+                (es. dichiarazione di nascita, dichiarazione sostitutiva, ecc.).
+            </p>
+        </div>
+
+        <p style="margin-top:8px;color:#666;font-size:.9rem;">
+            L'agente leggerà il PDF, capirà di che documento si tratta e ti chiederà
+            solo le informazioni che servono davvero. I dati anagrafici saranno
+            recuperati automaticamente dai registri PA.
+        </p>
+    </fieldset>
+
+    <div style="display:flex;gap:12px;justify-content:flex-end;">
+        <button type="submit" class="btn btn-primary">Avvia Elaborazione</button>
+    </div>
+</form>
+{% endblock %}

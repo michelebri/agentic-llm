@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+
+{% block title %}Verifica Documento{% endblock %}
+{% block header %}Verifica Automatica del Documento{% endblock %}
+
+{% block extra_css %}
+<style>
+.overall-banner {
+    padding:16px 20px; border-radius:10px; margin-bottom:24px;
+    font-weight:600; font-size:1.05rem;
+}
+.banner-ok { background:#e8f5e9; color:#2e7d32; border-left:5px solid #4caf50; }
+.banner-warning { background:#fff8e1; color:#a05a00; border-left:5px solid #ffb300; }
+.banner-error { background:#ffebee; color:#c62828; border-left:5px solid #e53935; }
+
+.section-title { color:#444; margin-bottom:14px; font-weight:700; }
+
+.check-list { margin-bottom:28px; }
+.check-item {
+    display:flex; gap:14px; align-items:flex-start;
+    padding:12px 16px; border-radius:8px; margin-bottom:10px;
+    background:#fafbff; border:1px solid #e0e4ff;
+}
+.check-icon { font-size:1.4rem; width:30px; text-align:center; flex-shrink:0; }
+.check-content { flex:1; }
+.check-label { font-weight:600; color:#333; }
+.check-message { color:#555; font-size:.92rem; margin-top:4px; }
+
+.alerts-box {
+    background:#fff8e1; border:2px solid #ffd54f; border-radius:10px;
+    padding:18px 22px; margin-bottom:24px;
+}
+.alerts-box h3 { color:#a05a00; margin-bottom:12px; }
+.alerts-box .intro {
+    color:#a05a00; font-size:.92rem; margin-bottom:14px;
+}
+.alert-item {
+    background:#fff; border-radius:6px; padding:12px 14px;
+    margin-bottom:10px; border-left:4px solid #ffb300;
+}
+.alert-item.sev-alta { border-left-color:#e53935; }
+.alert-item.sev-media { border-left-color:#ff9800; }
+.alert-item.sev-bassa { border-left-color:#ffd54f; }
+.alert-field { font-weight:700; color:#333; }
+.alert-value {
+    font-family:monospace; background:#f5f5f5; padding:2px 8px;
+    border-radius:4px; display:inline-block; margin:4px 0; font-size:.88rem;
+}
+.alert-issue { color:#666; font-size:.9rem; margin-top:4px; }
+.sev-tag {
+    float:right; font-size:.72rem; padding:2px 8px; border-radius:4px;
+    color:#fff; font-weight:600;
+}
+.sev-tag.alta { background:#e53935; }
+.sev-tag.media { background:#ff9800; }
+.sev-tag.bassa { background:#ffd54f; color:#5d3a00; }
+
+.actions { display:flex; gap:12px; justify-content:space-between; margin-top:28px; }
+.btn-secondary { background:#f0f0f0; color:#333; border:1px solid #ccc; }
+
+.philosophy-note {
+    margin-top:20px; padding:14px 18px; background:#f5f5f5;
+    border-radius:8px; color:#666; font-size:.85rem;
+    border-left:3px solid #999;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+{% set status_label = {'ok': '✓ Documento verificato', 'warning': '⚠ Verifica con avvisi', 'error': '✗ Verifica fallita'} %}
+<div class="overall-banner banner-{{ overall_status }}">
+    {{ status_label[overall_status] }}
+</div>
+
+<h3 class="section-title">Controlli eseguiti</h3>
+<div class="check-list">
+    {% for ch in checks %}
+    {% set icon = {'ok': '✓', 'warning': '⚠', 'error': '✗'} %}
+    <div class="check-item">
+        <div class="check-icon" style="color:{% if ch.status=='ok' %}#4caf50{% elif ch.status=='warning' %}#ffb300{% else %}#e53935{% endif %};">
+            {{ icon[ch.status] }}
+        </div>
+        <div class="check-content">
+            <div class="check-label">{{ ch.label }}</div>
+            <div class="check-message">{{ ch.message }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% if alerts %}
+<div class="alerts-box">
+    <h3>⚠ Aree da verificare manualmente</h3>
+    <p class="intro">
+        L'agente ha individuato {{ alerts|length }}
+        {{ 'area' if alerts|length == 1 else 'aree' }}
+        dove il documento potrebbe essere stato generato male.
+        <strong>Il sistema NON corregge automaticamente</strong>: controlla tu il PDF generato
+        e, se necessario, torna indietro per modificare i dati.
+    </p>
+
+    {% for a in alerts %}
+    <div class="alert-item sev-{{ a.severity }}">
+        <span class="sev-tag {{ a.severity }}">{{ a.severity }}</span>
+        <div class="alert-field">{{ a.field }}</div>
+        <div class="alert-value">{{ a.current_value }}</div>
+        <div class="alert-issue">💭 {{ a.issue }}</div>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="actions">
+    <form action="{{ url_for('index') }}" method="get" style="margin:0;">
+        <button type="submit" class="btn btn-secondary">← Torna a modificare i dati</button>
+    </form>
+
+    <form action="{{ url_for('result') }}" method="get" style="margin:0;">
+        <button type="submit" class="btn btn-primary">Procedi al download →</button>
+    </form>
+</div>
+
+<div class="philosophy-note">
+    <strong>Filosofia AI Act:</strong> il sistema fornisce trasparenza e avvisi, ma la decisione
+    finale resta sempre umana. Nessuna autocorrezione viene applicata al tuo documento.
+</div>
+{% endblock %}

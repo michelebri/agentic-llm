@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+
+{% block title %}Documento Pronto{% endblock %}
+{% block header %}Documento Generato!{% endblock %}
+
+{% block extra_css %}
+<style>
+.success-icon {
+    width: 70px; height: 70px; background: #d4edda; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 16px;
+}
+.success-icon svg { width: 36px; height: 36px; fill: #28a745; }
+.result-info { text-align: center; margin-bottom: 24px; }
+.result-info p { color: #666; margin-bottom: 6px; }
+
+.download-section {
+    text-align: center; padding: 24px;
+    background: #f8f9fa; border-radius: 12px; margin-bottom: 24px;
+}
+.download-btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 14px 28px; font-size: 1.05rem;
+}
+.download-btn svg { width: 22px; height: 22px; }
+
+.provenance-section {
+    background:#fff; border:2px solid #e0e4ff;
+    border-radius:12px; padding:18px 22px; margin-bottom:24px;
+}
+.provenance-section h3 {
+    color:#444; margin-bottom:14px; font-size:1.1rem;
+    display:flex; align-items:center; gap:8px;
+}
+.prov-summary {
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:16px;
+}
+.prov-chip {
+    padding:6px 12px; border-radius:6px; font-size:.85rem;
+    color:#fff; font-weight:600;
+}
+.chip-anagrafe { background:#4a5fd0; }
+.chip-stato-civile { background:#ad4ad0; }
+.chip-agenzia-entrate { background:#d08a4a; }
+.chip-user-input { background:#777; }
+.chip-user-confirmed { background:#4caf50; }
+.chip-user-conflict { background:#ff9800; }
+.chip-other { background:#999; }
+
+.prov-table {
+    width:100%; border-collapse:collapse; font-size:.88rem;
+}
+.prov-table th {
+    text-align:left; padding:8px 10px; background:#f0f3ff;
+    color:#444; font-weight:600; border-bottom:2px solid #d0d4f0;
+}
+.prov-table td {
+    padding:8px 10px; border-bottom:1px solid #eee; color:#555;
+}
+.prov-table tr:hover td { background:#fafbff; }
+.source-mini {
+    display:inline-block; font-size:.72rem; padding:2px 8px;
+    border-radius:4px; color:#fff; font-weight:600;
+}
+.actions { display:flex; gap:12px; justify-content:center; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="success-icon">
+    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+    </svg>
+</div>
+
+<div class="result-info">
+    <h3>Documento generato con successo!</h3>
+    <p>Il modulo PA è stato compilato e verificato dagli agenti.</p>
+</div>
+
+<div class="download-section">
+    <a href="{{ url_for('download_file', filename=pdf_filename) }}" class="btn btn-primary download-btn">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" fill="white">
+            <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+        </svg>
+        Scarica PDF
+    </a>
+    {% if has_audit %}
+    <div style="margin-top:14px;">
+        <a href="{{ url_for('audit_log') }}" style="color:#667eea;font-size:.92rem;">
+            📋 Scarica audit log (provenance JSON)
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% if provenance %}
+<div class="provenance-section">
+    <h3>🔍 Tracciamento di Provenance</h3>
+    <p style="color:#666;font-size:.9rem;margin-bottom:14px;">
+        Per ogni campo del documento è registrata la sorgente — come richiesto
+        dall'AI Act europeo per l'uso di IA nella Pubblica Amministrazione.
+    </p>
+
+    <div class="prov-summary">
+        {% for source, count in provenance.by_source.items() %}
+        {% set cls = source|lower|replace(' ', '-')|replace('(', '')|replace(')', '') %}
+        <div class="prov-chip
+            {% if 'anagrafe' in source|lower %}chip-anagrafe
+            {% elif 'stato civile' in source|lower %}chip-stato-civile
+            {% elif 'agenzia' in source|lower %}chip-agenzia-entrate
+            {% elif 'confermato' in source|lower %}chip-user-confirmed
+            {% elif 'conflitto' in source|lower %}chip-user-conflict
+            {% elif 'utente' in source|lower %}chip-user-input
+            {% else %}chip-other{% endif %}">
+            {{ source }}: {{ count }}
+        </div>
+        {% endfor %}
+    </div>
+
+    <details>
+        <summary style="cursor:pointer;color:#4a5fd0;font-weight:600;margin-bottom:10px;">
+            Mostra dettaglio per campo ({{ provenance.entries|length }} campi)
+        </summary>
+        <table class="prov-table">
+            <thead>
+                <tr><th>Campo</th><th>Valore</th><th>Sorgente</th><th>Confidence</th></tr>
+            </thead>
+            <tbody>
+            {% for e in provenance.entries %}
+                <tr>
+                    <td><code>{{ e.field_id }}</code></td>
+                    <td>{{ e.value[:60] }}{% if e.value|length > 60 %}…{% endif %}</td>
+                    <td>
+                        <span class="source-mini
+                            {% if 'anagrafe' in e.source|lower %}chip-anagrafe
+                            {% elif 'stato civile' in e.source|lower %}chip-stato-civile
+                            {% elif 'agenzia' in e.source|lower %}chip-agenzia-entrate
+                            {% elif 'confermato' in e.source|lower %}chip-user-confirmed
+                            {% elif 'conflitto' in e.source|lower %}chip-user-conflict
+                            {% elif 'utente' in e.source|lower %}chip-user-input
+                            {% else %}chip-other{% endif %}">{{ e.source }}</span>
+                    </td>
+                    <td>{{ '%.0f'|format(e.confidence * 100) }}%</td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </details>
+</div>
+{% endif %}
+
+<div class="actions">
+    <button class="btn btn-secondary" id="verify-btn" onclick="runVerify()">Verifica documento</button>
+    <form action="{{ url_for('reset') }}" method="post">
+        <button type="submit" class="btn btn-secondary">Crea un altro documento</button>
+    </form>
+</div>
+<div id="verify-result" style="margin-top:20px;display:none;"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+async function runVerify() {
+    const btn = document.getElementById('verify-btn');
+    const resultDiv = document.getElementById('verify-result');
+    btn.disabled = true;
+    btn.textContent = 'Verifica in corso…';
+
+    try {
+        const resp = await fetch('/verify_now', { method: 'POST' });
+        const data = await resp.json();
+
+        const status = data.overall_status;
+        const color = status === 'ok' ? '#d4edda' : status === 'warning' ? '#fff3cd' : '#f8d7da';
+        const textColor = status === 'ok' ? '#155724' : status === 'warning' ? '#856404' : '#721c24';
+        const icon = status === 'ok' ? '✅' : status === 'warning' ? '⚠️' : '❌';
+
+        let html = `<div style="background:${color};color:${textColor};border-radius:10px;padding:16px 20px;">`;
+        html += `<strong>${icon} Stato: ${status.toUpperCase()}</strong>`;
+
+        if (data.alerts && data.alerts.length > 0) {
+            html += '<ul style="margin-top:10px;padding-left:20px;">';
+            data.alerts.forEach(a => {
+                html += `<li><strong>${a.field}</strong>: ${a.issue} <em>(${a.severity})</em></li>`;
+            });
+            html += '</ul>';
+        } else {
+            html += '<p style="margin-top:8px;">Nessuna anomalia rilevata.</p>';
+        }
+        html += '</div>';
+
+        resultDiv.innerHTML = html;
+        resultDiv.style.display = 'block';
+    } catch(e) {
+        resultDiv.innerHTML = '<div style="background:#f8d7da;color:#721c24;border-radius:10px;padding:16px;">Errore durante la verifica.</div>';
+        resultDiv.style.display = 'block';
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Verifica documento';
+}
+</script>
+{% endblock %}

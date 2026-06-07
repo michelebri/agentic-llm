@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Risoluzione Conflitti{% endblock %}
+{% block header %}Conflitti tra Registri Rilevati{% endblock %}
+
+{% block extra_css %}
+<style>
+.intro { color:#555; margin-bottom:20px; line-height:1.6; }
+.intro-box {
+    background:#fff3e0; border-left:4px solid #ff9800;
+    padding:14px 18px; margin-bottom:24px; border-radius:6px;
+    color:#5d3a00;
+}
+.conflict-card {
+    background:#fff; border:2px solid #ffcc80;
+    border-radius:12px; padding:18px 22px; margin-bottom:18px;
+}
+.conflict-header {
+    font-weight:700; color:#333; font-size:1.05rem;
+    margin-bottom:12px; display:flex; justify-content:space-between;
+}
+.sev-alta { color:#c62828; }
+.sev-media { color:#ef6c00; }
+.sev-bassa { color:#558b2f; }
+.options { display:flex; gap:12px; margin-top:10px; }
+.option-card {
+    flex:1; border:2px solid #d0d4f0; border-radius:8px;
+    padding:14px; cursor:pointer; transition:.15s; background:#fafbff;
+}
+.option-card:hover { border-color:#667eea; background:#f0f3ff; }
+.option-card input[type=radio] { margin-right:8px; }
+.source-label {
+    display:inline-block; font-size:.75rem; padding:2px 8px;
+    border-radius:4px; color:#fff; margin-bottom:6px;
+}
+.src-Anagrafe { background:#4a5fd0; }
+.src-Anagrafe-Nazionale { background:#4a5fd0; }
+.src-Stato-Civile { background:#ad4ad0; }
+.src-Agenzia-delle-Entrate { background:#d08a4a; }
+.src-other { background:#777; }
+.explanation { color:#666; font-size:.9rem; font-style:italic; margin-top:8px; }
+.actions { display:flex; justify-content:flex-end; margin-top:24px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="intro-box">
+    <strong>⚠️ Attenzione:</strong> i dati del cittadino non coincidono tra registri diversi.
+    L'agente di Conflict Detection ha rilevato {{ conflicts|length }}
+    {{ 'conflitto' if conflicts|length == 1 else 'conflitti' }}.
+    Scegli il valore corretto per ciascun conflitto prima di procedere.
+</div>
+
+<form action="{{ url_for('risolvi_conflitto') }}" method="post">
+    {% for c in conflicts %}
+    <div class="conflict-card">
+        <div class="conflict-header">
+            <span>Campo: <code>{{ c.field }}</code></span>
+            <span class="sev-{{ c.severity }}">Gravità: {{ c.severity }}</span>
+        </div>
+
+        <p class="explanation">{{ c.explanation }}</p>
+
+        <div class="options">
+            <label class="option-card">
+                <input type="radio" name="conflict_{{ loop.index0 }}" value="a" required>
+                <span class="source-label src-{{ c.source_a|replace(' ', '-')|replace('(', '')|replace(')', '') }} src-other">{{ c.source_a }}</span>
+                <div style="font-weight:600;">{{ c.value_a }}</div>
+            </label>
+            <label class="option-card">
+                <input type="radio" name="conflict_{{ loop.index0 }}" value="b">
+                <span class="source-label src-{{ c.source_b|replace(' ', '-')|replace('(', '')|replace(')', '') }} src-other">{{ c.source_b }}</span>
+                <div style="font-weight:600;">{{ c.value_b }}</div>
+            </label>
+        </div>
+
+        <input type="hidden" name="field_{{ loop.index0 }}" value="{{ c.field }}">
+        <input type="hidden" name="value_a_{{ loop.index0 }}" value="{{ c.value_a }}">
+        <input type="hidden" name="value_b_{{ loop.index0 }}" value="{{ c.value_b }}">
+        <input type="hidden" name="source_a_{{ loop.index0 }}" value="{{ c.source_a }}">
+        <input type="hidden" name="source_b_{{ loop.index0 }}" value="{{ c.source_b }}">
+    </div>
+    {% endfor %}
+
+    <input type="hidden" name="n_conflicts" value="{{ conflicts|length }}">
+
+    <div class="actions">
+        <button type="submit" class="btn btn-primary">Conferma scelte e continua →</button>
+    </div>
+</form>
+{% endblock %}
