@@ -223,3 +223,25 @@ td {
   margin-top: 25px ;
   /* margin-bottom: 100px; */
 }
+
+.result-comparison {
+  padding: 1.5rem 0;
+  border-top: 1px solid #e8e8e8;
+}
+
+.result-comparison:first-of-type {
+  border-top: none;
+}
+
+.result-image-frame {
+  border-radius: 6px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.12);
+  background: #fff;
+  overflow: hidden;
+}
+
+.result-image-frame img {
+  width: 100%;
+  height: auto;
+  display: block;
+}

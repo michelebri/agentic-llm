@@ -4,7 +4,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Title</title>
+  <title>LLM Agentic Assistant for Document Generation in Public Administration</title>
 
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
   <link rel="stylesheet" href="./static/css/bulma.min.css">
@@ -32,7 +32,7 @@
     </div>
     <div class="navbar-menu">
       <div class="navbar-start" style="flex-grow: 1; justify-content: center;">
-        <a class="navbar-item" href="url_site">Project Page</a>
+        <a class="navbar-item" href="#">Project Page</a>
       </div>
     </div>
   </nav>
@@ -42,18 +42,30 @@
       <div class="container is-max-desktop">
         <div class="columns is-centered">
           <div class="column has-text-centered">
-            <h1 class="title is-2 publication-title">Title</h1>
-            <h2 class="title is-6 publication-title">conference</h2>
+            <h1 class="title is-2 publication-title">LLM Agentic Assistant for Document Generation, Verification, and Integrity Preservation in the Public Administration domain</h1>
+            <h2 class="title is-6 publication-title">Ital-IA 2026: 6th National Conference on Artificial Intelligence, organized by CINI, June 18–19, 2026, Rome, Italy</h2>
 
             <div class="is-size-5 publication-authors">
               <span class="author-block">
-                <a href="https://www.linkedin.com/in/michele-brienza-ba0292253//"><i>Michele Brienza</i></a> <sup>1</sup>,
+                <i>Michele Brienza</i><sup>1,*</sup>,
+              </span>
+              <span class="author-block">
+                <i>Emanuele Musumeci</i><sup>1</sup>,
+              </span>
+              <span class="author-block">
+                <i>Domenico D. Bloisi</i><sup>2</sup>,
+              </span>
+              <span class="author-block">
+                <i>Daniele Nardi</i><sup>1</sup>,
+              </span>
+              <span class="author-block">
+                <i>Vincenzo Suriani</i><sup>1</sup>
               </span>
             </div>
 
             <div class="is-size-6 publication-authors" style="margin-top: 0.5rem;">
-              <span class="author-block"><sup>1</sup> Dept. of Computer, Control, and Management Engineering, Sapienza University of Rome &nbsp;·&nbsp;</span>
-              <span class="author-block"><sup>3</sup> Dept. of International Humanities and Social Sciences, International University of Rome</span>
+              <span class="author-block"><sup>1</sup> Sapienza University, Rome, Italy &nbsp;·&nbsp;</span>
+              <span class="author-block"><sup>2</sup> UNINT International University of Rome, Rome, Italy</span>
             </div>
 
             <div class="column has-text-centered" style="margin-top: 1rem;">
@@ -91,7 +103,20 @@
           <h2 class="title is-3">Abstract</h2>
           <div class="content has-text-justified">
             <p>
-              text
+              The digital transformation of Public Administration increasingly depends on the ability to automate document
+              workflows without compromising the structural integrity, legal validity, and auditability of sensitive bureaucratic
+              documents. Recent advances in LLM function calling have enabled agentic workflows capable of addressing
+              key digitalization challenges in Public Administration (PA), particularly in document generation and processing.
+              Real-world PA documents such as certificates, declarations, and contracts present significant structural complexity,
+              combining free text with rigid formal blocks, making integrity preservation a critical requirement that LLMs alone
+              cannot guarantee. We propose an agentic pipeline that separates structure discovery from content filling through
+              LLM orchestration via function calling, coupled with a formal domain-specific validator that ensures structural
+              consistency and field completeness independently of LLM variance. We evaluate our system on real-world Italian
+              PA documents across different domains, demonstrating that the pipeline successfully resolves required fields
+              while preserving document integrity.
+            </p>
+            <p>
+              <strong>Keywords:</strong> Agentic AI, Human-in-the-Loop, Public Administration
             </p>
           </div>
         </div>
@@ -106,12 +131,107 @@
       <div class="columns is-centered">
         <div class="column is-full">
           <figure class="has-text-centered">
-            <img src="static/media/architecture.png" alt=" architecture diagram" style="max-width:80%; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.12);">
+            <img src="static/media/pipeline.png" alt="End-to-end pipeline for automated document generation from unstructured PDFs" style="max-width:80%; border-radius: 6px; box-shadow: 0 2px 12px rgba(0,0,0,0.12);">
+            <figcaption class="is-size-6 mt-3">End-to-end pipeline for automated document generation from unstructured PDFs, comprising layout detection, structure reconstruction, field instantiation via user chat, and validation with PDF rendering.</figcaption>
           </figure>
           <div class="content has-text-justified mt-5">
             <p>
-              The pipeline is organized around ore components:
+              We propose a modular four-step pipeline for automated document generation from unstructured PDFs:
             </p>
+            <ol>
+              <li>
+                <strong>Adaptive Layout Detection</strong> extracts text regions via hybrid native and OCR methods.
+                For digital-born PDFs, text blocks are extracted natively with bounding boxes; for scanned documents,
+                a vision-language OCR model extracts regions with confidence scores.
+              </li>
+              <li>
+                <strong>Document Understanding and Structure Reconstruction</strong> uses a vision-language model
+                with function calling to classify the document and reconstruct its logical structure as a typed sequence
+                of blocks (titles, paragraphs, tables, signatures, etc.), producing a Blueprint and a list of required
+                field queries for the user.
+              </li>
+              <li>
+                <strong>Rule-Based Field Instantiation</strong> collects missing fields through interactive chat and
+                deterministically fills placeholders by merging database records and user-provided answers, with full
+                provenance tracking for each substitution.
+              </li>
+              <li>
+                <strong>Validation and Rendering</strong> performs rule-based quality checks on completeness, format
+                constraints, grammatical concordance, and cross-field consistency before rendering the final PDF.
+              </li>
+            </ol>
+            <p>
+              The system uses exclusively open-source models to guarantee zero data retention for sensitive public
+              administration documents. Tool calling constrains the LLM to a trustable action space, while a decoupled
+              validator drives the correction cycle with human-in-the-loop escalation when automated checks cannot
+              guarantee a reliable outcome.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section py-5" id="results">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Results</h2>
+      <div class="content has-text-justified mb-5">
+        <p>
+          Qualitative results on real-world Italian PA forms. For each document type, the original scanned
+          template and the generated output are shown side by side.
+        </p>
+      </div>
+
+      <div class="result-comparison mb-6">
+        <h3 class="title is-5 has-text-centered mb-4">Dichiarazione sostitutiva dell'atto di notorietà</h3>
+        <div class="columns is-vcentered">
+          <div class="column">
+            <p class="has-text-centered is-size-6 has-text-weight-semibold mb-3">Original</p>
+            <figure class="result-image-frame has-text-centered">
+              <img src="static/media/results/notorieta_original.png" alt="Original sworn statement of notoriety">
+            </figure>
+          </div>
+          <div class="column">
+            <p class="has-text-centered is-size-6 has-text-weight-semibold mb-3">Generated</p>
+            <figure class="result-image-frame has-text-centered">
+              <img src="static/media/results/notorieta_generated.png" alt="Generated sworn statement of notoriety">
+            </figure>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-comparison mb-6">
+        <h3 class="title is-5 has-text-centered mb-4">Dichiarazione sostitutiva di certificazioni</h3>
+        <div class="columns is-vcentered">
+          <div class="column">
+            <p class="has-text-centered is-size-6 has-text-weight-semibold mb-3">Original</p>
+            <figure class="result-image-frame has-text-centered">
+              <img src="static/media/results/certificazioni_original.png" alt="Original substitute certification declaration">
+            </figure>
+          </div>
+          <div class="column">
+            <p class="has-text-centered is-size-6 has-text-weight-semibold mb-3">Generated</p>
+            <figure class="result-image-frame has-text-centered">
+              <img src="static/media/results/certificazioni_generated.png" alt="Generated substitute certification declaration">
+            </figure>
+          </div>
+        </div>
+      </div>
+
+      <div class="result-comparison">
+        <h3 class="title is-5 has-text-centered mb-4">Dichiarazione di nascita</h3>
+        <div class="columns is-vcentered">
+          <div class="column">
+            <p class="has-text-centered is-size-6 has-text-weight-semibold mb-3">Original</p>
+            <figure class="result-image-frame has-text-centered">
+              <img src="static/media/results/nascita_original.png" alt="Original birth declaration">
+            </figure>
+          </div>
+          <div class="column">
+            <p class="has-text-centered is-size-6 has-text-weight-semibold mb-3">Generated</p>
+            <figure class="result-image-frame has-text-centered">
+              <img src="static/media/results/nascita_generated.png" alt="Generated birth declaration">
+            </figure>
           </div>
         </div>
       </div>
@@ -129,9 +249,9 @@
   <footer class="footer">
     <div class="container">
       <div class="content has-text-centered">
-        <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">
+        <a rel="license" href="http://creativecommons.org/licenses/by/4.0/">
           <img alt="Creative Commons License" style="border-width:0"
-            src="https://i.creativecommons.org/l/by-sa/4.0/88x31.png" />
+            src="https://i.creativecommons.org/l/by/4.0/88x31.png" />
         </a>
       </div>
       <div class="columns is-centered">
