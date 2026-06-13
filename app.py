@@ -51,8 +51,8 @@ def get_workspace():
             "document_analysis": None,
             "citizen_record": None,
             "conflicts": [],
-            "chat_history": [],          # list of {role, content} for LLM
-            "collected_data": {},        # data gathered in chat
+            "chat_history": [],
+            "collected_data": {},
             "provenance": ProvenanceLog(),
             "agent_log": AgentLogger(),
             "output_pdf": None,
@@ -131,20 +131,17 @@ def upload():
     workspace["nome_richiedente"] = nome
     workspace["cognome_richiedente"] = cognome
 
-    # Lookup citizen in PA database
     lookup_result = lookup_richiedente(nome, cognome)
     workspace["lookup_result"] = lookup_result
 
     candidates = lookup_result.get("candidates", [])
     if len(candidates) == 1:
-        # Auto-select unique match
         chosen = candidates[0]
         workspace["citizen_record"] = chosen
         conflicts = detect_conflicts(chosen)
         workspace["conflicts"] = conflicts
         _record_citizen_provenance(workspace, chosen)
     elif len(candidates) > 1:
-        # Multiple matches — let user pick
         return redirect(url_for("conferma_cittadino_get"))
 
     return _proceed_to_analysis(workspace)
@@ -247,10 +244,8 @@ def _proceed_to_analysis(workspace):
 
 
 def _init_chat(workspace):
-    """Inizializza la chat history e filtra le chat_questions già coperte dal citizen_record."""
     analysis = workspace.get("document_analysis") or {}
 
-    # Rimuovi dalle chat_questions i campi già coperti dai dati anagrafici
     citizen_record = workspace.get("citizen_record") or {}
     a = citizen_record.get("anagrafe") or {}
     ae = citizen_record.get("agenzia_entrate") or {}
@@ -303,9 +298,7 @@ def dati_anagrafici_post():
     if not workspace.get("document_analysis"):
         return redirect(url_for("index"))
 
-    # Costruisce citizen_record sintetico dai dati inseriti
     data_nascita = request.form.get("data_nascita", "")
-    # Normalizza data: se arriva da <input type="date"> è YYYY-MM-DD, converti in gg/mm/aaaa
     if data_nascita and "-" in data_nascita:
         parts = data_nascita.split("-")
         if len(parts) == 3:
@@ -329,20 +322,15 @@ def dati_anagrafici_post():
     }
     workspace["citizen_record"] = citizen_record
 
-    # Pre-popola collected_data con tutti gli alias comuni usati nei placeholder
-    # così format_map li risolve senza chiederli in chat
     a = anagrafe
     cf = request.form.get("codice_fiscale", "").strip().upper()
     workspace["collected_data"] = {
-        # chiavi canoniche
         "nome": a["nome"], "cognome": a["cognome"],
         "data_nascita": a["data_nascita"], "luogo_nascita": a["luogo_nascita"],
         "provincia_nascita": a["provincia_nascita"], "codice_fiscale": cf,
         "indirizzo": a["indirizzo"], "comune_residenza": a["comune_residenza"], "cap": a["cap"],
-        # alias abbreviati usati spesso nei placeholder LLM
         "luogo": a["luogo_nascita"], "prov": a["provincia_nascita"],
         "data": a["data_nascita"], "cf": cf,
-        # prefisso genitore/dichiarante
         "genitore_nome": a["nome"], "genitore_cognome": a["cognome"],
         "genitore_data_nascita": a["data_nascita"], "genitore_luogo_nascita": a["luogo_nascita"],
         "genitore_prov_nascita": a["provincia_nascita"], "genitore_cf": cf,
@@ -387,7 +375,6 @@ def risolvi_conflitto_post():
             citizen_id=citizen_id,
             notes=f"Conflitto: {source_a}='{value_a}' vs {source_b}='{value_b}'. Scelto: {chosen_source}.",
         )
-        # Apply resolution to citizen record
         if workspace.get("citizen_record"):
             rec = workspace["citizen_record"]
             for section in ("anagrafe", "agenzia_entrate", "stato_civile"):
@@ -427,7 +414,6 @@ def chat_message():
         return jsonify({"error": "empty message"}), 400
 
     chat_history = workspace.get("chat_history", [])
-    # Build LLM-compatible history (skip the initial assistant opening since it's in system)
     llm_history = [h for h in chat_history if h["role"] != "assistant" or chat_history.index(h) > 0]
 
     result = chat_reply(
@@ -437,12 +423,10 @@ def chat_message():
         citizen_record=workspace.get("citizen_record"),
     )
 
-    # Update history
     chat_history.append({"role": "user", "content": user_message})
     chat_history.append({"role": "assistant", "content": result["reply"]})
     workspace["chat_history"] = chat_history
 
-    # Merge collected data
     collected = workspace.get("collected_data", {})
     collected.update(result.get("collected", {}))
     workspace["collected_data"] = collected

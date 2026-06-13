@@ -1,10 +1,3 @@
-"""
-blueprint.py — Tipi e renderer per la pipeline agentica.
-
-Un Blueprint è una sequenza di Block tipizzati che descrivono un documento PA
-in modo strutturato (no bbox). Il Renderer produce un PDF pulito con flow layout.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -23,21 +16,18 @@ from reportlab.platypus import (
 
 @dataclass
 class TitleBlock:
-    """Titolo principale del documento, centrato e grassetto."""
     text: str
     kind: Literal["title"] = "title"
 
 
 @dataclass
 class SubtitleBlock:
-    """Sottotitolo / intestazione secondaria."""
     text: str
     kind: Literal["subtitle"] = "subtitle"
 
 
 @dataclass
 class HeadingBlock:
-    """Heading di sezione (es. 'DICHIARA', 'CHIEDE')."""
     text: str
     centered: bool = True
     kind: Literal["heading"] = "heading"
@@ -45,7 +35,6 @@ class HeadingBlock:
 
 @dataclass
 class ParagraphBlock:
-    """Paragrafo di testo statico (boilerplate)."""
     text: str
     align: Literal["left", "center", "right", "justify"] = "left"
     kind: Literal["paragraph"] = "paragraph"
@@ -53,10 +42,6 @@ class ParagraphBlock:
 
 @dataclass
 class FilledParagraphBlock:
-    """
-    Paragrafo che contiene dati da compilare.
-    `template` può contenere [DA CHIEDERE: field_id] per campi non ancora noti.
-    """
     template: str
     align: Literal["left", "center", "right", "justify"] = "left"
     kind: Literal["filled_paragraph"] = "filled_paragraph"
@@ -64,7 +49,6 @@ class FilledParagraphBlock:
 
 @dataclass
 class ListBlock:
-    """Lista di righe (es. elenco documenti da allegare)."""
     intro: Optional[str] = None
     items: List[str] = field(default_factory=list)
     bullet: str = "•"
@@ -73,7 +57,6 @@ class ListBlock:
 
 @dataclass
 class TableBlock:
-    """Tabella con header e righe. Le celle possono contenere [DA CHIEDERE: x]."""
     headers: List[str] = field(default_factory=list)
     rows: List[List[str]] = field(default_factory=list)
     kind: Literal["table"] = "table"
@@ -81,7 +64,6 @@ class TableBlock:
 
 @dataclass
 class SignatureBlock:
-    """Riga di firma con etichetta sotto."""
     label: str = "Firma del dichiarante"
     place_date: bool = True
     kind: Literal["signature"] = "signature"
@@ -89,14 +71,12 @@ class SignatureBlock:
 
 @dataclass
 class SpacerBlock:
-    """Spazio verticale fisso (in millimetri)."""
     mm_height: float = 6.0
     kind: Literal["spacer"] = "spacer"
 
 
 @dataclass
 class FootnoteBlock:
-    """Testo piccolo a piè pagina (note legali, info versione)."""
     text: str
     align: Literal["left", "center", "right"] = "left"
     kind: Literal["footnote"] = "footnote"
@@ -104,10 +84,6 @@ class FootnoteBlock:
 
 @dataclass
 class ImageTextBlock:
-    """
-    Per scansioni/foto: testo OCR-estratto da un'immagine che è essa stessa
-    contenuto testuale. NON per loghi/decorazioni (quelle vengono ignorate).
-    """
     text: str
     kind: Literal["image_text"] = "image_text"
 
@@ -138,13 +114,12 @@ class Blueprint:
 
 @dataclass
 class BlueprintState:
-    """Stato condiviso tra agenti nella pipeline."""
     pdf_path: str
     document_type: str = ""
     chat_opening: str = ""
-    complexity: str = "simple"  # simple | complex
+    complexity: str = "simple"
     lingua: str = "it"
-    regions: List[Dict[str, Any]] = field(default_factory=list)   # da Layout Detector
+    regions: List[Dict[str, Any]] = field(default_factory=list)
     blueprint: Optional[Blueprint] = None
     filled_blueprint: Optional[Blueprint] = None
     chat_questions: List[Dict[str, str]] = field(default_factory=list)
@@ -325,7 +300,6 @@ def _block_to_flowables(b: Block, styles: Dict[str, ParagraphStyle]) -> List[Any
 
 
 def render_blueprint(bp: Blueprint, output_path: str) -> None:
-    """Renderizza un Blueprint in PDF usando ReportLab flow layout."""
     page_w, page_h = A4
     margin = 20 * mm
 
@@ -352,7 +326,6 @@ def render_blueprint(bp: Blueprint, output_path: str) -> None:
 # ── Smoke test demo blueprint ─────────────────────────────────────────────────
 
 def demo_blueprint() -> Blueprint:
-    """Blueprint hardcoded che imita la Dichiarazione sostitutiva di notorietà."""
     return Blueprint(
         document_type="Dichiarazione sostitutiva dell'atto di notorietà",
         blocks=[

@@ -1,17 +1,3 @@
-"""
-pipeline.py — Orchestratore della pipeline Blueprint.
-
-Coordina i 6 step:
-  1. Layout Detector (layout_detector.py)
-  2. Classifier (agents.py)
-  3. Blueprint Architect (agents.py)
-  4. Filler (filler.py)
-  5. Validator (filler.py)
-  6. Renderer (blueprint.py)
-
-Salva tutti gli artefatti in experiments/results/{stem}_{ts}/.
-"""
-
 from __future__ import annotations
 
 import datetime
@@ -93,7 +79,6 @@ def _build_chat_opening(document_type: str, chat_questions: List[Dict]) -> str:
 # ── Step runners ──────────────────────────────────────────────────────────────
 
 def _step_layout(pdf_path: str) -> Tuple[List[Dict], str]:
-    """Step 1: Layout Detector."""
     print("[Pipeline] Step 1 — Layout Detector")
     regions, source = detect_layout(pdf_path)
     print(f"  source={source}  regions={len(regions)}")
@@ -101,7 +86,6 @@ def _step_layout(pdf_path: str) -> Tuple[List[Dict], str]:
 
 
 def _step_classify(pdf_path: str, citizen_record: Optional[Dict]) -> Dict[str, Any]:
-    """Step 2: Classifier."""
     print("[Pipeline] Step 2 — Classifier")
     from agents import classify_document
     cls = classify_document(pdf_path, citizen_record=citizen_record)
@@ -115,7 +99,6 @@ def _step_architect(
     document_type: str,
     citizen_record: Optional[Dict],
 ) -> Tuple[Blueprint, List[Dict[str, str]]]:
-    """Step 3: Blueprint Architect."""
     print("[Pipeline] Step 3 — Blueprint Architect")
     from agents import build_blueprint
     bp, chat_q = build_blueprint(pdf_path, regions, document_type, citizen_record=citizen_record)
@@ -128,7 +111,6 @@ def _step_fill(
     citizen_record: Optional[Dict],
     collected: Optional[Dict],
 ) -> Tuple[Blueprint, List[str]]:
-    """Step 4: Filler."""
     print("[Pipeline] Step 4 — Filler")
     filled, missing = fill_blueprint(bp, citizen_record=citizen_record, collected=collected)
     print(f"  missing={missing}")
@@ -141,7 +123,6 @@ def _step_validate(
     collected: Optional[Dict],
     missing: List[str],
 ) -> Dict[str, Any]:
-    """Step 5: Validator."""
     print("[Pipeline] Step 5 — Validator")
     report = validate_blueprint(filled_bp, citizen_record=citizen_record,
                                 collected=collected, missing_fields=missing)
@@ -150,7 +131,6 @@ def _step_validate(
 
 
 def _step_render(filled_bp: Blueprint, output_path: str) -> None:
-    """Step 6: Renderer."""
     print("[Pipeline] Step 6 — Renderer")
     render_blueprint(filled_bp, output_path)
     print(f"  PDF: {output_path}")
@@ -163,19 +143,11 @@ def run_analysis(
     citizen_record: Optional[Dict] = None,
     collected: Optional[Dict] = None,
 ) -> Dict[str, Any]:
-    """
-    Esegue Step 1-3 (Layout + Classify + Architect) e ritorna un dict compatibile
-    con workspace["document_analysis"]. Non genera il PDF finale.
-
-    Se esiste una cache su disco per questo PDF, salta gli step 1-3.
-    Usato da app.py dopo l'upload per inizializzare la chat.
-    """
     regions, _source = _step_layout(pdf_path)
     cls = _step_classify(pdf_path, citizen_record)
     document_type = cls.get("document_type", "Documento PA")
     bp, chat_q = _step_architect(pdf_path, regions, document_type, citizen_record)
 
-    # Filler parziale con i dati già disponibili (identifica missing)
     filled, missing = _step_fill(bp, citizen_record, collected)
 
     return {
@@ -196,14 +168,9 @@ def run_generation(
     collected: Optional[Dict] = None,
     pdf_filename: str = "document.pdf",
 ) -> Tuple[str, Dict[str, Any]]:
-    """
-    Esegue Step 4-6 (Filler finale + Validator + Renderer) e salva gli artefatti.
-
-    Ritorna (output_pdf_path, validation_report).
-    """
     bp: Blueprint = document_analysis.get("blueprint")
     if bp is None:
-        raise ValueError("document_analysis non contiene 'blueprint' — eseguire prima run_analysis()")
+        raise ValueError("document_analysis manca di 'blueprint'")
 
     filled, missing = _step_fill(bp, citizen_record, collected)
     report = _step_validate(filled, citizen_record, collected, missing)
@@ -211,8 +178,6 @@ def run_generation(
     stem = Path(pdf_filename).stem
     output_path = str(Path(workspace_dir) / f"{stem}_filled.pdf")
     _step_render(filled, output_path)
-
-    # Salva artefatti
     _save_run(pdf_filename, bp, filled, citizen_record, collected, report, output_path)
 
     return output_path, report

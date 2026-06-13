@@ -86,8 +86,6 @@ def _call_llm(messages: List[Dict], tools: Optional[List] = None, tool_choice: s
 
 
 
-# ── PIPELINE 3-STADI: Classifier → Structurer → Compose ─────────────────────
-
 CLASSIFIER_TOOL = [{
     "type": "function",
     "function": {
@@ -107,7 +105,6 @@ CLASSIFIER_TOOL = [{
 
 
 def classify_document(pdf_path: str, citizen_record: Optional[Dict] = None) -> Dict:
-    """Stadio 1: Classifier (vision-only). Identifica il documento, scrive opening."""
     logger = _log()
     if logger:
         logger.agent_start("Classifier", Path(pdf_path).name)
@@ -274,7 +271,6 @@ def _execute_lookup_tool(name: str, args: Dict) -> Any:
 
 
 def lookup_richiedente(nome: str, cognome: str) -> Dict:
-    """Ricerca diretta nel DB PA, senza LLM."""
     results = search_anagrafe(nome=nome, cognome=cognome)
     candidates = [c for c in (get_full_citizen_record(r["id"]) for r in results) if c]
     return {"candidates": candidates, "reasoning": "Ricerca diretta anagrafe.", "n_candidates": len(candidates)}
@@ -439,7 +435,6 @@ def verify_document(output_pdf_path: str, citizen_record: Optional[Dict] = None)
 
     deterministic_checks = []
 
-    # Checksum CF
     if citizen_record:
         cf = (citizen_record.get("agenzia_entrate") or {}).get("codice_fiscale", "")
         if cf:
@@ -451,7 +446,6 @@ def verify_document(output_pdf_path: str, citizen_record: Optional[Dict] = None)
                 "message": f"CF {cf} {'valido' if ok else 'NON valido (checksum errato)'}.",
             })
 
-    # Converti PDF in immagine per verifica visiva
     try:
         img_b64 = _pdf_page_to_base64(output_pdf_path, page=0, dpi=120)
     except Exception as exc:

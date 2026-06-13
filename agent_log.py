@@ -1,7 +1,3 @@
-"""
-AgentLogger — registra in tempo reale tool call, risultati e decisioni
-degli agenti per visualizzarli nella console UI.
-"""
 from __future__ import annotations
 
 import json
@@ -14,19 +10,6 @@ _GLOBAL_LOCK = threading.Lock()
 
 
 class AgentLogger:
-    """
-    Logger condiviso per gli agenti. Gli eventi vengono mostrati nella
-    console UI (poll su /agent_log).
-
-    Tipi di evento:
-      - 'agent_start'  → inizio lavoro di un agente
-      - 'tool_call'    → l'agente chiama un tool con certi argomenti
-      - 'tool_result'  → risultato del tool (sintetico)
-      - 'decision'     → decisione finale dell'agente
-      - 'agent_end'    → fine lavoro
-      - 'warning'      → avviso non bloccante
-    """
-
     def __init__(self) -> None:
         self._events: List[Dict[str, Any]] = []
         self._seq = 0

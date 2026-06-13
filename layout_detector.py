@@ -1,15 +1,3 @@
-"""
-layout_detector.py — Step 2 della pipeline agentica.
-
-Estrae regions = [{text, bbox, source, conf?}] da un PDF.
-
-Strategia:
-  1. Tenta estrazione nativa con PyMuPDF (PDF digitali) — gratis, veloce.
-  2. Se il PDF è una scansione (poco/zero testo nativo) → DeepSeek-OCR via Regolo.
-
-bbox sempre normalizzate [0, 1] su [x0, y0, x1, y1].
-"""
-
 from __future__ import annotations
 
 import base64
@@ -29,11 +17,7 @@ REGOLO_BASE_URL = "https://api.regolo.ai/v1"
 _API_KEY_FILE = Path(__file__).parent / "api.txt"
 API_KEY = _API_KEY_FILE.read_text().strip() if _API_KEY_FILE.exists() else ""
 
-# Nome modello DeepSeek-OCR su Regolo (configurabile)
 OCR_MODEL_NAME = "deepseek-ocr-2"
-
-# Soglia minima di caratteri testo nativo per considerare il PDF "digitale".
-# Sotto questa soglia consideriamo la pagina una scansione → fallback OCR.
 NATIVE_TEXT_MIN_CHARS = 80
 
 
@@ -45,12 +29,10 @@ Region = Dict[str, Any]  # {"text": str, "bbox": [x0,y0,x1,y1], "source": str, "
 # ── PyMuPDF nativo ────────────────────────────────────────────────────────────
 
 def _extract_native(pdf_path: str, page_idx: int = 0) -> List[Region]:
-    """Estrae blocchi di testo nativi via PyMuPDF. Vuoto se il PDF è scansione."""
     doc = fitz.open(pdf_path)
     page = doc[page_idx]
     w, h = page.rect.width, page.rect.height
 
-    # page.get_text("blocks") → [(x0, y0, x1, y1, text, block_no, block_type), ...]
     raw = page.get_text("blocks")
     doc.close()
 
@@ -59,7 +41,6 @@ def _extract_native(pdf_path: str, page_idx: int = 0) -> List[Region]:
         if len(b) < 7:
             continue
         x0, y0, x1, y1, text, _bno, btype = b[0], b[1], b[2], b[3], b[4], b[5], b[6]
-        # btype: 0 = testo, 1 = immagine. Saltiamo le immagini.
         if btype != 0:
             continue
         clean = (text or "").replace("\xa0", " ").replace(" ", " ").strip()
@@ -81,7 +62,6 @@ def _total_chars(regions: List[Region]) -> int:
 # ── PDF → immagine base64 ─────────────────────────────────────────────────────
 
 def _pdf_page_to_base64_png(pdf_path: str, page_idx: int = 0, dpi: int = 180) -> str:
-    """Renderizza la pagina come PNG e ritorna base64 (per OCR vision)."""
     doc = fitz.open(pdf_path)
     page = doc[page_idx]
     mat = fitz.Matrix(dpi / 72, dpi / 72)
@@ -112,7 +92,6 @@ _OCR_SYSTEM = (
 
 
 def _call_ocr_llm(img_b64: str) -> Dict[str, Any]:
-    """Chiama DeepSeek-OCR via endpoint Regolo OpenAI-compatible."""
     if not API_KEY:
         raise RuntimeError("API_KEY mancante (api.txt non trovato)")
 
@@ -138,15 +117,12 @@ def _call_ocr_llm(img_b64: str) -> Dict[str, Any]:
 
 
 def _parse_ocr_response(raw: str) -> List[Region]:
-    """Estrae regions dall'output (anche se con testo extra attorno al JSON)."""
-    # Cerca il primo blocco JSON nel testo
     match = re.search(r"\{.*\}", raw, re.DOTALL)
     if not match:
         return []
     try:
         parsed = json.loads(match.group(0))
     except json.JSONDecodeError:
-        # Tenta sanificazione minimale (a volte gli LLM chiudono male)
         fragment = match.group(0)
         opens = fragment.count("{") - fragment.count("}")
         opens_sq = fragment.count("[") - fragment.count("]")
@@ -179,7 +155,6 @@ def _parse_ocr_response(raw: str) -> List[Region]:
 
 
 def _ocr_cache_path(pdf_path: str, page_idx: int) -> Path:
-    """Percorso file cache per OCR: stesso dir del PDF, nome basato su hash+pagina."""
     p = Path(pdf_path)
     content_hash = hashlib.md5(p.read_bytes()).hexdigest()[:12]
     return p.parent / f".{p.stem}_ocr_p{page_idx}_{content_hash}.json"
@@ -204,7 +179,6 @@ def _save_ocr_cache(cache_path: Path, regions: List[Region]) -> None:
 
 
 def _extract_ocr(pdf_path: str, page_idx: int = 0) -> List[Region]:
-    """Estrae regions via DeepSeek-OCR (per scansioni). Usa cache su disco."""
     cache_path = _ocr_cache_path(pdf_path, page_idx)
     cached = _load_ocr_cache(cache_path)
     if cached is not None:
@@ -223,28 +197,15 @@ def _extract_ocr(pdf_path: str, page_idx: int = 0) -> List[Region]:
 # ── Entry point unificato ─────────────────────────────────────────────────────
 
 def detect_layout(pdf_path: str, page_idx: int = 0, force: Optional[str] = None) -> Tuple[List[Region], str]:
-    """
-    Estrae regions dalla pagina indicata.
-    Strategia automatica:
-      - Prova PyMuPDF nativo
-      - Se testo totale < soglia → fallback DeepSeek-OCR (con cache)
-
-    Parametri:
-      force: None | "native" | "ocr"  per saltare l'auto-detect
-
-    Ritorna: (regions, fonte_usata)
-    """
     if force == "native":
         return _extract_native(pdf_path, page_idx), "pymupdf_native"
     if force == "ocr":
         return _extract_ocr(pdf_path, page_idx), "deepseek_ocr"
 
-    # Auto: tenta nativo
     native = _extract_native(pdf_path, page_idx)
     if _total_chars(native) >= NATIVE_TEXT_MIN_CHARS:
         return native, "pymupdf_native"
 
-    # Fallback OCR (con cache)
     print(f"[LayoutDetector] PDF sembra scansione ({_total_chars(native)} char nativi) → OCR")
     return _extract_ocr(pdf_path, page_idx), "deepseek_ocr"
 

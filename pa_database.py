@@ -1,18 +1,3 @@
-"""
-Database fittizio della Pubblica Amministrazione.
-
-Simula tre registri separati come nell'architettura reale italiana:
-  - ANAGRAFE_NAZIONALE (ANPR): dati anagrafici + residenza
-  - STATO_CIVILE: matrimoni, figli, eventi civili
-  - AGENZIA_ENTRATE: codice fiscale + dati fiscali/indirizzo fiscale
-
-Casi inclusi (per dimostrare le capacità del sistema multi-agente):
-  C001 — Mario Rossi:       match perfetto, dati consistenti
-  C002/C003/C004 — Giuseppe Bianchi ×3: omonimi (Milano/Napoli/Roma)
-  C005 — Anna Verdi:        presente in Anagrafe, assente in Stato Civile
-  C006 — Luigi Conti:       conflitto indirizzo tra Anagrafe e Agenzia Entrate
-"""
-
 from __future__ import annotations
 
 from typing import Optional
@@ -94,7 +79,6 @@ ANAGRAFE_NAZIONALE: list[dict] = [
         "luogo_nascita": "Torino",
         "provincia_nascita": "TO",
         "sesso": "M",
-        # NB: indirizzo registrato in Anagrafe — vedi conflitto con Agenzia Entrate
         "indirizzo": "Via Roma 12",
         "comune_residenza": "Milano",
         "provincia_residenza": "MI",
@@ -131,7 +115,6 @@ STATO_CIVILE: dict[str, dict] = {
         "coniuge": None,
         "figli": [],
     },
-    # C005 (Anna Verdi) — volutamente assente per simulare dato mancante
     "C006": {
         "stato_civile": "divorziato",
         "coniuge": None,
@@ -139,10 +122,6 @@ STATO_CIVILE: dict[str, dict] = {
     },
 }
 
-
-# ── AGENZIA DELLE ENTRATE ─────────────────────────────────────────────────────
-# Contiene il codice fiscale validato + indirizzo fiscale (può differire da
-# quello anagrafico in caso di domicilio fiscale separato).
 
 AGENZIA_ENTRATE: dict[str, dict] = {
     "C001": {
@@ -182,7 +161,6 @@ AGENZIA_ENTRATE: dict[str, dict] = {
     },
     "C006": {
         "codice_fiscale": "CNTLGU78D22L219Z",
-        # CONFLITTO: indirizzo fiscale a Roma, ma Anagrafe lo dà residente a Milano
         "indirizzo_fiscale": "Via Napoli 8",
         "comune_fiscale": "Roma",
         "cap_fiscale": "00184",
@@ -198,12 +176,6 @@ def search_anagrafe(
     cognome: Optional[str] = None,
     codice_fiscale: Optional[str] = None,
 ) -> list[dict]:
-    """
-    Cerca cittadini in Anagrafe Nazionale.
-    Match case-insensitive su nome/cognome. Se viene fornito codice_fiscale,
-    risolve prima tramite Agenzia Entrate e restituisce il record anagrafico.
-    Ritorna sempre una lista (può essere vuota o contenere più match per omonimia).
-    """
     if codice_fiscale:
         cf = codice_fiscale.strip().upper()
         for citizen_id, fiscal in AGENZIA_ENTRATE.items():
@@ -227,7 +199,6 @@ def search_anagrafe(
 
 
 def get_anagrafe_by_id(citizen_id: str) -> Optional[dict]:
-    """Restituisce il record anagrafico per ID, o None se non trovato."""
     for record in ANAGRAFE_NAZIONALE:
         if record["id"] == citizen_id:
             return record
@@ -235,20 +206,14 @@ def get_anagrafe_by_id(citizen_id: str) -> Optional[dict]:
 
 
 def get_stato_civile(citizen_id: str) -> Optional[dict]:
-    """Restituisce i dati di stato civile per il cittadino, o None se assenti."""
     return STATO_CIVILE.get(citizen_id)
 
 
 def get_agenzia_entrate(citizen_id: str) -> Optional[dict]:
-    """Restituisce i dati fiscali per il cittadino, o None se assenti."""
     return AGENZIA_ENTRATE.get(citizen_id)
 
 
 def get_full_citizen_record(citizen_id: str) -> Optional[dict]:
-    """
-    Restituisce il record completo aggregato dai tre registri.
-    Ogni sezione è etichettata con la propria sorgente per il tracking di provenance.
-    """
     anagrafe = get_anagrafe_by_id(citizen_id)
     if not anagrafe:
         return None

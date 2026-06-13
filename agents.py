@@ -1,12 +1,3 @@
-"""
-agents.py — Agenti LLM della pipeline (Step 3 + Step 4).
-
-- Classifier: identifica il documento (vision-only, output piccolo).
-- Blueprint Architect: produce blocks tipizzati a partire da regions + immagine.
-
-Entrambi usano l'endpoint Regolo OpenAI-compatible (gemma4-31b).
-"""
-
 from __future__ import annotations
 
 import base64
@@ -32,7 +23,7 @@ REGOLO_BASE_URL = "https://api.regolo.ai/v1"
 _API_KEY_FILE = Path(__file__).parent / "api.txt"
 API_KEY = _API_KEY_FILE.read_text().strip() if _API_KEY_FILE.exists() else ""
 
-MODEL_NAME = "gemma4-31b"  # Modello "ragionatore" per Classifier + Architect
+MODEL_NAME = "gemma4-31b"
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -76,7 +67,6 @@ def _safe_json_loads(s: str) -> Any:
     try:
         return json.loads(s)
     except json.JSONDecodeError:
-        # auto-chiusura parentesi/quadre
         opens = s.count("{") - s.count("}")
         opens_sq = s.count("[") - s.count("]")
         s2 = s + "]" * max(opens_sq, 0) + "}" * max(opens, 0)
@@ -136,7 +126,6 @@ CLASSIFIER_TOOL = [{
 
 
 def classify_document(pdf_path: str, citizen_record: Optional[Dict] = None) -> Dict[str, Any]:
-    """Step 3 — Classifier. Identifica documento, lingua, complessità."""
     cache_path = _agent_cache_path(pdf_path, "classifier")
     cached = _load_cache(cache_path)
     if cached:
@@ -200,8 +189,6 @@ def classify_document(pdf_path: str, citizen_record: Optional[Dict] = None) -> D
 
 
 # ── STEP 4: Blueprint Architect ───────────────────────────────────────────────
-
-# Tool schema con i Block ammessi. Schema stretto = output stabile su gemma4.
 
 ARCHITECT_TOOL = [{
     "type": "function",
@@ -280,7 +267,6 @@ ARCHITECT_TOOL = [{
 
 
 def _regions_summary(regions: List[Dict[str, Any]], max_items: int = 80) -> str:
-    """Compatta le regions in righe testuali per il prompt LLM."""
     lines = []
     for i, r in enumerate(regions[:max_items]):
         bbox = [round(v, 3) for v in r.get("bbox", [0, 0, 0, 0])]
@@ -297,10 +283,6 @@ def build_blueprint(
     document_type: str,
     citizen_record: Optional[Dict] = None,
 ) -> tuple[Blueprint, List[Dict[str, str]]]:
-    """
-    Step 4 — Blueprint Architect.
-    Riceve immagine + regions + tipo documento, produce Blueprint + chat_questions.
-    """
     from blueprint import dict_to_blueprint
 
     cache_path = _agent_cache_path(pdf_path, "architect")
@@ -316,7 +298,6 @@ def build_blueprint(
         print(f"[Architect] errore immagine: {exc}")
         img_b64 = None
 
-    # Contesto dati anagrafici
     avail_ctx = ""
     avail_keys: List[str] = []
     sesso: Optional[str] = None  # "M" | "F" | None
@@ -325,7 +306,6 @@ def build_blueprint(
         ae = citizen_record.get("agenzia_entrate") or {}
         sc = citizen_record.get("stato_civile") or {}
 
-        # Determina sesso: campo esplicito o euristica da codice fiscale
         _sesso_raw = (a.get("sesso") or "").upper().strip()
         if _sesso_raw in ("M", "F"):
             sesso = _sesso_raw
@@ -357,7 +337,6 @@ def build_blueprint(
                 + "\n".join(f"- {k}: {dict(pairs)[k]}" for k in avail_keys)
             )
 
-    # Istruzione genere per concordanza grammaticale
     if sesso == "M":
         genere_ctx = (
             "\n\nGENERE DICHIARANTE: MASCHILE. "
@@ -471,7 +450,7 @@ if __name__ == "__main__":
     from layout_detector import detect_layout
     from blueprint import render_blueprint, blueprint_to_dict
 
-    parser = argparse.ArgumentParser(description="Pipeline parziale: Classifier → Architect → render")
+    parser = argparse.ArgumentParser(description="Classifier → Architect → render")
     parser.add_argument("pdf", help="Percorso PDF")
     parser.add_argument("-o", "--out", default="pipeline_test.pdf", help="PDF output")
     parser.add_argument("--no-render", action="store_true", help="Salta il rendering finale")

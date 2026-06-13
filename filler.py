@@ -1,11 +1,3 @@
-"""
-filler.py — Step 5 (Filler) e Step 6 (Validator) della pipeline.
-
-Filler: deterministico, sostituisce [DA CHIEDERE: field_id] con i dati disponibili.
-        Lavora su tutti i campi testuali dei Block del Blueprint.
-Validator: controlli deterministici di qualità (CF, date, campi obbligatori).
-"""
-
 from __future__ import annotations
 
 import re
@@ -38,7 +30,6 @@ DA_CHIEDERE_RE = re.compile(r"\[DA CHIEDERE:\s*([a-zA-Z0-9_\.\-]+)\s*\]", re.IGN
 # ── Costruzione data pool ─────────────────────────────────────────────────────
 
 def _build_data_pool(citizen_record: Optional[Dict], collected: Optional[Dict]) -> Dict[str, str]:
-    """Pool unificato {field_id: value}. collected ha precedenza sui dati anagrafici."""
     pool: Dict[str, str] = {}
     if citizen_record:
         a = citizen_record.get("anagrafe") or {}
@@ -61,14 +52,12 @@ def _build_data_pool(citizen_record: Optional[Dict], collected: Optional[Dict]) 
         for k, v in collected.items():
             if v:
                 pool[k] = str(v)
-    # Rimuovi entry vuote per leggibilità (le chiavi mancanti torneranno '' via .get)
     return {k: v for k, v in pool.items() if v}
 
 
 # ── Sostituzione marker ───────────────────────────────────────────────────────
 
 def _substitute(text: str, pool: Dict[str, str], missing: set[str]) -> str:
-    """Sostituisce ogni [DA CHIEDERE: x] con pool[x]; se mancante, lascia il marker."""
     if not text or "[DA CHIEDERE:" not in text.upper():
         return text
 
@@ -78,7 +67,7 @@ def _substitute(text: str, pool: Dict[str, str], missing: set[str]) -> str:
         if val:
             return val
         missing.add(key)
-        return m.group(0)  # lascia il marker se mancante
+        return m.group(0)
 
     return DA_CHIEDERE_RE.sub(_repl, text)
 
@@ -86,7 +75,6 @@ def _substitute(text: str, pool: Dict[str, str], missing: set[str]) -> str:
 # ── Filler sul Block ──────────────────────────────────────────────────────────
 
 def _fill_block(b: Block, pool: Dict[str, str], missing: set[str]) -> Block:
-    """Ritorna un nuovo Block con i marker sostituiti."""
     if isinstance(b, FilledParagraphBlock):
         return replace(b, template=_substitute(b.template, pool, missing))
 
@@ -117,10 +105,6 @@ def fill_blueprint(
     citizen_record: Optional[Dict] = None,
     collected: Optional[Dict] = None,
 ) -> Tuple[Blueprint, List[str]]:
-    """
-    Step 5 — Filler.
-    Ritorna (blueprint compilato, lista field_id mancanti).
-    """
     pool = _build_data_pool(citizen_record, collected)
     missing: set[str] = set()
     new_blocks = [_fill_block(b, pool, missing) for b in bp.blocks]
@@ -185,29 +169,13 @@ def validate_blueprint(
     collected: Optional[Dict] = None,
     missing_fields: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
-    """
-    Step 6 — Validator (deterministico, no LLM).
-    Controlla:
-      - presenza marker [DA CHIEDERE] residui
-      - validità formale di CF, date, CAP, provincia (su pool dati)
-      - blocchi vuoti / contenuti sospetti
-
-    Ritorna:
-      {
-        "overall_status": "ok" | "warning" | "error",
-        "alerts": [{field, severity, issue}, ...],
-        "missing_required": [field_id, ...],
-      }
-    """
     pool = _build_data_pool(citizen_record, collected)
     alerts: List[Dict[str, str]] = []
 
-    # 1. Marker residui
     if missing_fields:
         for fid in missing_fields:
             alerts.append({"field": fid, "severity": "error", "issue": "campo richiesto non fornito"})
 
-    # 2. Validazioni formali sui dati del pool
     field_validators = {
         "codice_fiscale": _validate_cf,
         "data_nascita":   _validate_date,
@@ -220,11 +188,9 @@ def validate_blueprint(
             if err:
                 alerts.append({"field": fid, "severity": "warning", "issue": err})
 
-    # 3. Block sanity
     if not bp.blocks:
         alerts.append({"field": "_document", "severity": "error", "issue": "blueprint vuoto"})
 
-    # Status
     has_error = any(a["severity"] == "error" for a in alerts)
     has_warn = any(a["severity"] == "warning" for a in alerts)
     status = "error" if has_error else ("warning" if has_warn else "ok")
@@ -245,12 +211,11 @@ if __name__ == "__main__":
     from agents import classify_document, build_blueprint
     from layout_detector import detect_layout
 
-    parser = argparse.ArgumentParser(description="Pipeline completa: detect → classify → architect → fill → validate → render")
+    parser = argparse.ArgumentParser(description="Pipeline completa")
     parser.add_argument("pdf", help="Percorso PDF")
     parser.add_argument("-o", "--out", default="pipeline_full.pdf", help="PDF output")
     args = parser.parse_args()
 
-    # Dati finti per testare la sostituzione
     citizen_record = {
         "anagrafe": {
             "nome": "Mario",

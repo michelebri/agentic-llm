@@ -1,16 +1,3 @@
-"""
-Tracciamento di provenance per ogni campo compilato.
-
-Ogni valore inserito nel documento finale porta con sé:
-  - source: da quale registro/fonte proviene
-  - confidence: quanto è affidabile (0-1)
-  - retrieved_at: timestamp del recupero
-  - citizen_id: collegamento al record sorgente (se applicabile)
-
-Questo è il pilastro "trasparenza" del sistema, richiesto dall'AI Act
-per l'uso di IA nella Pubblica Amministrazione.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field, asdict
@@ -20,7 +7,6 @@ from typing import Optional
 
 
 class Source(str, Enum):
-    """Sorgenti possibili per un campo compilato."""
     ANAGRAFE = "Anagrafe Nazionale (ANPR)"
     STATO_CIVILE = "Stato Civile"
     AGENZIA_ENTRATE = "Agenzia delle Entrate"
@@ -32,7 +18,6 @@ class Source(str, Enum):
 
 @dataclass
 class ProvenanceEntry:
-    """Traccia la provenance di un singolo campo del documento."""
     field_id: str
     value: str
     source: Source
@@ -48,8 +33,6 @@ class ProvenanceEntry:
 
 
 class ProvenanceLog:
-    """Raccolta di tutte le entries di provenance per un documento."""
-
     def __init__(self):
         self.entries: list[ProvenanceEntry] = []
 
@@ -80,7 +63,6 @@ class ProvenanceLog:
         return None
 
     def by_source(self) -> dict[str, int]:
-        """Conta quanti campi vengono da ciascuna sorgente."""
         counts: dict[str, int] = {}
         for e in self.entries:
             counts[e.source.value] = counts.get(e.source.value, 0) + 1
@@ -90,7 +72,6 @@ class ProvenanceLog:
         return [e.to_dict() for e in self.entries]
 
     def summary(self) -> dict:
-        """Riepilogo per dashboard / report finale."""
         return {
             "total_fields": len(self.entries),
             "by_source": self.by_source(),
