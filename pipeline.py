@@ -13,8 +13,6 @@ from layout_detector import detect_layout
 RESULTS_DIR = Path(__file__).parent / "experiments" / "results"
 
 
-# ── Artefact helpers ──────────────────────────────────────────────────────────
-
 def _write_json(path: Path, data: Any) -> None:
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -25,8 +23,6 @@ def _make_run_dir(stem: str) -> Path:
     run_dir.mkdir(parents=True, exist_ok=True)
     return run_dir
 
-
-# ── Pipeline result ───────────────────────────────────────────────────────────
 
 class PipelineResult:
     def __init__(
@@ -75,8 +71,6 @@ def _build_chat_opening(document_type: str, chat_questions: List[Dict]) -> str:
         "Iniziamo!"
     )
 
-
-# ── Step runners ──────────────────────────────────────────────────────────────
 
 def _step_layout(pdf_path: str) -> Tuple[List[Dict], str]:
     print("[Pipeline] Step 1 — Layout Detector")
@@ -136,18 +130,15 @@ def _step_render(filled_bp: Blueprint, output_path: str) -> None:
     print(f"  PDF: {output_path}")
 
 
-# ── Public API ────────────────────────────────────────────────────────────────
-
 def run_analysis(
     pdf_path: str,
     citizen_record: Optional[Dict] = None,
     collected: Optional[Dict] = None,
 ) -> Dict[str, Any]:
-    regions, _source = _step_layout(pdf_path)
+    regions, source = _step_layout(pdf_path)
     cls = _step_classify(pdf_path, citizen_record)
     document_type = cls.get("document_type", "Documento PA")
     bp, chat_q = _step_architect(pdf_path, regions, document_type, citizen_record)
-
     filled, missing = _step_fill(bp, citizen_record, collected)
 
     return {
@@ -157,6 +148,8 @@ def run_analysis(
         "blueprint": bp,
         "filled_blueprint": filled,
         "missing_fields": missing,
+        "regions": regions,
+        "layout_source": source,
     }
 
 
@@ -170,7 +163,7 @@ def run_generation(
 ) -> Tuple[str, Dict[str, Any]]:
     bp: Blueprint = document_analysis.get("blueprint")
     if bp is None:
-        raise ValueError("document_analysis manca di 'blueprint'")
+        raise ValueError("document_analysis non contiene 'blueprint' — eseguire prima run_analysis()")
 
     filled, missing = _step_fill(bp, citizen_record, collected)
     report = _step_validate(filled, citizen_record, collected, missing)
@@ -178,7 +171,12 @@ def run_generation(
     stem = Path(pdf_filename).stem
     output_path = str(Path(workspace_dir) / f"{stem}_filled.pdf")
     _step_render(filled, output_path)
-    _save_run(pdf_filename, bp, filled, citizen_record, collected, report, output_path)
+
+    _save_run(
+        pdf_filename, bp, filled, citizen_record, collected, report, output_path,
+        regions=document_analysis.get("regions"),
+        layout_source=document_analysis.get("layout_source"),
+    )
 
     return output_path, report
 
@@ -191,6 +189,8 @@ def _save_run(
     collected: Optional[Dict],
     report: Dict[str, Any],
     output_pdf: str,
+    regions: Optional[List[Dict]] = None,
+    layout_source: Optional[str] = None,
 ) -> None:
     stem = Path(pdf_filename).stem
     run_dir = _make_run_dir(stem)
@@ -201,4 +201,6 @@ def _save_run(
     _write_json(run_dir / "citizen_record.json", citizen_record or {})
     _write_json(run_dir / "collected_data.json", collected or {})
     _write_json(run_dir / "validation.json", report)
+    if regions is not None:
+        _write_json(run_dir / "regions.json", {"source": layout_source, "regions": regions})
     print(f"[Pipeline] Artefatti salvati in {run_dir}")
