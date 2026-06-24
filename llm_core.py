@@ -1,5 +1,6 @@
 import base64
 import json
+import os
 import re
 import requests
 import fitz
@@ -27,9 +28,8 @@ def _log() -> Optional[AgentLogger]:
     return _CURRENT_LOGGER
 
 
-REGOLO_BASE_URL = "https://api.regolo.ai/v1"
-_api_key_file = Path(__file__).parent / "api.txt"
-API_KEY = _api_key_file.read_text().strip()
+API_URL = os.getenv("API_URL", "https://api.regolo.ai/v1")
+API_KEY = os.getenv("API_KEY", "")
 MODEL_NAME = "gemma4-31b"
 
 
@@ -75,7 +75,7 @@ def _call_llm(messages: List[Dict], tools: Optional[List] = None, tool_choice: s
     if tools:
         payload["tools"] = tools
         payload["tool_choice"] = tool_choice
-    response = requests.post(f"{REGOLO_BASE_URL}/chat/completions", headers=headers, json=payload)
+    response = requests.post(f"{API_URL}/chat/completions", headers=headers, json=payload)
     response.raise_for_status()
     return response.json()["choices"][0]["message"]
 

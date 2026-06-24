@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Optional
 
 
-# ── ANAGRAFE NAZIONALE (ANPR) ─────────────────────────────────────────────────
+# ── SIMULATED ANAGRAFE NAZIONALE (ANPR) ─────────────────────────────────────────────────
 
 ANAGRAFE_NAZIONALE: list[dict] = [
     {
@@ -71,19 +71,6 @@ ANAGRAFE_NAZIONALE: list[dict] = [
         "provincia_residenza": "FI",
         "cap": "50122",
     },
-    {
-        "id": "C006",
-        "nome": "Luigi",
-        "cognome": "Conti",
-        "data_nascita": "1978-04-22",
-        "luogo_nascita": "Torino",
-        "provincia_nascita": "TO",
-        "sesso": "M",
-        "indirizzo": "Via Roma 12",
-        "comune_residenza": "Milano",
-        "provincia_residenza": "MI",
-        "cap": "20100",
-    },
 ]
 
 
@@ -112,11 +99,6 @@ STATO_CIVILE: dict[str, dict] = {
     },
     "C004": {
         "stato_civile": "celibe",
-        "coniuge": None,
-        "figli": [],
-    },
-    "C006": {
-        "stato_civile": "divorziato",
         "coniuge": None,
         "figli": [],
     },
@@ -158,13 +140,6 @@ AGENZIA_ENTRATE: dict[str, dict] = {
         "comune_fiscale": "Firenze",
         "cap_fiscale": "50122",
         "reddito_annuo": 24000,
-    },
-    "C006": {
-        "codice_fiscale": "CNTLGU78D22L219Z",
-        "indirizzo_fiscale": "Via Napoli 8",
-        "comune_fiscale": "Roma",
-        "cap_fiscale": "00184",
-        "reddito_annuo": 55000,
     },
 }
 

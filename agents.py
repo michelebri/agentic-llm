@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 
 import fitz
 import requests
-
+import os
 from blueprint import (
     Blueprint,
     Block,
@@ -19,10 +19,8 @@ from blueprint import (
 
 # ── Config ────────────────────────────────────────────────────────────────────
 
-REGOLO_BASE_URL = "https://api.regolo.ai/v1"
-_API_KEY_FILE = Path(__file__).parent / "api.txt"
-API_KEY = _API_KEY_FILE.read_text().strip() if _API_KEY_FILE.exists() else ""
-
+API_URL = os.getenv("API_URL", "https://api.regolo.ai/v1")
+API_KEY = os.getenv("API_KEY","")
 MODEL_NAME = "gemma4-31b"
 
 
@@ -82,7 +80,7 @@ def _call_llm(messages: List[Dict], tools: Optional[List] = None, tool_choice: s
     if tools:
         payload["tools"] = tools
         payload["tool_choice"] = tool_choice
-    resp = requests.post(f"{REGOLO_BASE_URL}/chat/completions", headers=headers, json=payload, timeout=180)
+    resp = requests.post(f"{API_URL}/chat/completions", headers=headers, json=payload, timeout=180)
     resp.raise_for_status()
     return resp.json()["choices"][0]["message"]
 

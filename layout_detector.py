@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import re
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -11,9 +12,8 @@ import fitz  # PyMuPDF
 import requests
 
 
-REGOLO_BASE_URL = "https://api.regolo.ai/v1"
-_API_KEY_FILE = Path(__file__).parent / "api.txt"
-API_KEY = _API_KEY_FILE.read_text().strip() if _API_KEY_FILE.exists() else ""
+API_URL = os.getenv("API_URL", "https://api.regolo.ai/v1")
+API_KEY = os.getenv("API_KEY", "")
 
 OCR_MODEL_NAME = "deepseek-ocr-2"
 
@@ -83,7 +83,7 @@ def _call_ocr_llm(img_b64: str, img_w: int, img_h: int) -> tuple[str, int, int]:
         "temperature": 0,
         "max_tokens": 7000,
     }
-    resp = requests.post(f"{REGOLO_BASE_URL}/chat/completions", headers=headers, json=payload, timeout=120)
+    resp = requests.post(f"{API_URL}/chat/completions", headers=headers, json=payload, timeout=120)
     if not resp.ok:
         print(f"[LayoutDetector] OCR error {resp.status_code}: {resp.text[:500]}")
     resp.raise_for_status()

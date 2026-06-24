@@ -14,6 +14,18 @@ This system transforms scanned or digital Italian public administration (PA) doc
 - 🎨 **Clean PDF Rendering**: Flow-layout rendering for legibility and consistency
 - 🔐 **Privacy-First**: Open-source models only, zero data retention
 
+## Setup
+
+Set the required environment variables and run the app:
+
+```bash
+export API_KEY=your-api-key
+export API_URL=https://api.regolo.ai/v1   # or any OpenAI-compatible endpoint
+export SECRET_KEY=your-secret-key
+
+python3 app.py
+```
+
 ## Architecture
 
 ```
